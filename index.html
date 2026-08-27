@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Horizon Academy — Fees Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Bootstrap 5 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- App styles (loaded after Bootstrap so the app's own design system wins) -->
+<link href="css/style.css" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<!-- ============ LOADING SCREEN ============ -->
+<div class="lock-screen show" id="loadingScreen" style="z-index:600;">
+  <div class="lock-box" style="text-align:center;">
+    <div style="font-family:'Fraunces',serif; font-size:19px; font-weight:600;">The Horizon Academy</div>
+    <div style="font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:#E3A23B; margin-top:3px;">Powered by ANASH</div>
+    <div style="margin-top:18px; font-size:13px; color:#C9CDD3;" id="loadingText">Loading your data…</div>
+  </div>
+</div>
+
+<!-- ============ PIN LOCK SCREEN ============ -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <div style="font-family:'Fraunces',serif; font-size:19px; font-weight:600;">The Horizon Academy</div>
+    <div style="font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:#E3A23B; margin-top:3px;">Powered by ANASH</div>
+    <div style="margin-top:16px; font-size:13px; color:#C9CDD3;">Enter PIN to continue</div>
+    <input type="password" id="lockPinInput" inputmode="numeric" maxlength="8" placeholder="••••">
+    <div class="lock-err" id="lockErr"></div>
+    <button class="btn btn-gold" style="width:100%; justify-content:center;" id="btnUnlock">Unlock</button>
+  </div>
+</div>
+
+<!-- ============ TOAST (undo) ============ -->
+<div class="toast" id="toast">
+  <span id="toastMsg"></span>
+  <button id="toastUndoBtn">Undo</button>
+</div>
+
+<div class="app" id="app">
+  <aside class="sidebar">
+    <div class="horizon-strip"></div>
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+          <circle cx="17" cy="15" r="8" fill="#E3A23B"/>
+          <rect x="0" y="21" width="34" height="34" fill="#1B2430"/>
+          <line x1="2" y1="21" x2="32" y2="21" stroke="#D9654A" stroke-width="2"/>
+        </svg>
+        <div><div class="brand-word">The Horizon<br>Academy</div></div>
+      </div>
+      <div class="brand-sub">Powered by ANASH</div>
+      <div class="brand-dev">Fees Management System · developed by Kafeel Azam</div>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-page="dashboard">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-btn" data-page="students">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Students
+      </button>
+      <button class="nav-btn" data-page="payments">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Collect / Payments
+      </button>
+      <button class="nav-btn" data-page="feestructure">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Fee Structure
+      </button>
+      <button class="nav-btn" data-page="expenses">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l3-3 3 2 4-5"/></svg>
+        Expenses
+      </button>
+      <button class="nav-btn" data-page="reports">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        Records &amp; Reports
+      </button>
+      <button class="nav-btn" data-page="settings">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+    </nav>
+    <div class="sidebar-foot">© <span id="yr"></span> The Horizon Academy — <span id="syncStatus">checking storage…</span></div>
+  </aside>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <div class="topbar">
+        <div><h1>Dashboard</h1><p>Overview of enrolment, collection and expenses.</p></div>
+        <button class="btn btn-gold" id="btnQuickCollect">＋ Collect a Payment</button>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card c-teal"><div class="stat-label">Total Students</div><div class="stat-value" id="stTotalStudents">0</div></div>
+        <div class="stat-card c-gold"><div class="stat-label">Collected — this month</div><div class="stat-value" id="stMonthCollected">Rs 0</div></div>
+        <div class="stat-card c-red"><div class="stat-label">Outstanding Dues</div><div class="stat-value" id="stOutstanding">Rs 0</div></div>
+        <div class="stat-card c-green"><div class="stat-label">Fully Paid Students</div><div class="stat-value" id="stClear">0</div></div>
+        <div class="stat-card c-red"><div class="stat-label">Expenses — this month</div><div class="stat-value" id="stMonthExpense">Rs 0</div></div>
+        <div class="stat-card c-teal"><div class="stat-label">Net — this month</div><div class="stat-value" id="stMonthNet">Rs 0</div></div>
+      </div>
+      <div class="panel"><h3>Enrolment by Programme</h3><div id="programBars"></div></div>
+      <div class="panel"><h3>Income vs Expense — last 6 months</h3><div id="trendChart"></div></div>
+      <div class="panel">
+        <div class="panel-head"><h3>Recent Payments</h3><button class="btn btn-ghost btn-sm" data-page="payments">View all →</button></div>
+        <div class="table-wrap"><table><thead><tr><th>Slip#</th><th>Date</th><th>Student</th><th>Programme</th><th>Purpose</th><th style="text-align:right">Amount</th></tr></thead><tbody id="recentPaymentsBody"></tbody></table></div>
+        <div class="empty" id="recentPaymentsEmpty" style="display:none;">No payments recorded yet.</div>
+      </div>
+    </section>
+
+    <!-- STUDENTS -->
+    <section class="page" id="page-students">
+      <div class="topbar">
+        <div><h1>Students</h1><p>Manage admissions, discounts, installments and track individual dues.</p></div>
+        <div class="row-actions">
+          <button class="btn btn-ghost" id="btnPromoteStudents">Promote Students</button>
+          <button class="btn btn-primary" id="btnAddStudent">＋ Add Student</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="studentSearch" class="search-input" placeholder="Search by ID, name or contact…">
+        <select id="studentCategoryFilter">
+          <option value="">All categories</option>
+          <option value="School">School</option>
+          <option value="Intermediate">Intermediate</option>
+          <option value="Skills">Computer Courses / English</option>
+        </select>
+        <select id="studentProgramFilter"><option value="">All programmes</option></select>
+        <select id="studentDueFilter">
+          <option value="">All students</option>
+          <option value="owing">With dues only</option>
+          <option value="clear">Fully paid only</option>
+        </select>
+      </div>
+      <div class="row-actions" id="bulkActionBar" style="display:none; margin-bottom:12px;">
+        <span class="helper" id="bulkSelectedCount" style="align-self:center;"></span>
+        <button class="btn btn-ghost btn-sm" id="btnBulkProgramme">Change Programme</button>
+        <button class="btn btn-ghost btn-sm" id="btnBulkDiscount">Set Discount</button>
+        <button class="btn btn-ghost btn-sm" id="btnBulkIdCards">Print ID Cards</button>
+        <button class="btn btn-danger btn-sm" id="btnBulkDelete">Delete Selected</button>
+        <button class="btn btn-ghost btn-sm" id="btnBulkClear">Clear Selection</button>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-wrap"><table>
+          <thead><tr><th><input type="checkbox" id="selectAllStudents"></th><th>ID</th><th>Name</th><th>Programme</th><th>Contact</th><th>Admitted</th><th style="text-align:right">Net Monthly Fee</th><th style="text-align:right">Due</th><th>Actions</th></tr></thead>
+          <tbody id="studentsBody"></tbody>
+        </table></div>
+        <div class="empty" id="studentsEmpty" style="display:none;">No students match. Try clearing filters or add a new student.</div>
+      </div>
+    </section>
+
+    <!-- PAYMENTS -->
+    <section class="page" id="page-payments">
+      <div class="topbar">
+        <div><h1>Collect / Payments</h1><p>Record a payment and print a two-copy fee slip.</p></div>
+        <button class="btn btn-primary" id="btnNewPayment">＋ New Payment</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="paymentSearch" class="search-input" placeholder="Search by student name or slip#…">
+        <input type="month" id="paymentMonthFilter">
+        <select id="paymentPurposeFilter">
+          <option value="">All purposes</option>
+          <option value="Monthly Fee">Monthly Fee</option>
+          <option value="Admission Fee">Admission Fee</option>
+          <option value="Exam Fee">Exam Fee</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Slip#</th><th>Date</th><th>Student</th><th>Programme</th><th>Purpose</th><th>Mode</th><th style="text-align:right">Amount</th><th>Actions</th></tr></thead>
+          <tbody id="paymentsBody"></tbody>
+        </table></div>
+        <div class="empty" id="paymentsEmpty" style="display:none;">No payments recorded yet.</div>
+      </div>
+    </section>
+
+    <!-- FEE STRUCTURE -->
+    <section class="page" id="page-feestructure">
+      <div class="topbar">
+        <div><h1>Fee Structure</h1><p>Default monthly and admission fee per programme. Editing here does not change amounts already recorded for existing students.</p></div>
+        <div class="row-actions">
+          <button class="btn btn-ghost" id="btnAddProgramme">＋ Add Programme</button>
+          <button class="btn btn-primary" id="btnSaveFees">Save Changes</button>
+        </div>
+      </div>
+      <div class="panel" id="feeStructurePanel"></div>
+    </section>
+
+    <!-- EXPENSES -->
+    <section class="page" id="page-expenses">
+      <div class="topbar">
+        <div><h1>Expenses</h1><p>Track rent, salaries and other running costs to see true net income.</p></div>
+        <button class="btn btn-primary" id="btnAddExpense">＋ Add Expense</button>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="expenseSearch" class="search-input" placeholder="Search by note…">
+        <input type="month" id="expenseMonthFilter">
+        <select id="expenseCategoryFilter">
+          <option value="">All categories</option>
+          <option>Rent</option><option>Salaries</option><option>Utilities</option><option>Stationery</option><option>Marketing</option><option>Maintenance</option><option>Other</option>
+        </select>
+      </div>
+      <div class="panel" style="padding:0;">
+        <div class="table-wrap"><table>
+          <thead><tr><th>Date</th><th>Category</th><th>Note</th><th style="text-align:right">Amount</th><th>Actions</th></tr></thead>
+          <tbody id="expensesBody"></tbody>
+        </table></div>
+        <div class="empty" id="expensesEmpty" style="display:none;">No expenses recorded yet.</div>
+      </div>
+    </section>
+
+    <!-- RECORDS & REPORTS -->
+    <section class="page" id="page-reports">
+      <div class="topbar">
+        <div><h1>Records &amp; Reports</h1><p>Collection records by day, week, month or year, plus outstanding dues.</p></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="period-tabs" id="periodTabs">
+            <button class="period-tab active" data-period="daily">Daily</button>
+            <button class="period-tab" data-period="weekly">Weekly</button>
+            <button class="period-tab" data-period="monthly">Monthly</button>
+            <button class="period-tab" data-period="yearly">Yearly</button>
+          </div>
+          <div id="periodInputHost"></div>
+        </div>
+        <div class="stat-grid stat-grid-3" style="margin-bottom:6px;">
+          <div class="stat-card c-gold"><div class="stat-label">Collected in Period</div><div class="stat-value" id="repTotal">Rs 0</div></div>
+          <div class="stat-card c-red"><div class="stat-label">Expenses in Period</div><div class="stat-value" id="repExpense">Rs 0</div></div>
+          <div class="stat-card c-teal"><div class="stat-label">Net in Period</div><div class="stat-value" id="repNet">Rs 0</div></div>
+        </div>
+      </div>
+
+      <div class="panel"><h3>Collection by Programme (selected period)</h3><div id="repProgramBars"></div></div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Payment Log — selected period</h3>
+          <div class="row-actions">
+            <button class="btn btn-ghost btn-sm" id="btnPrintRecords">Print</button>
+            <button class="btn btn-ghost btn-sm" id="btnExcelRecords">Excel</button>
+            <button class="btn btn-ghost btn-sm" id="btnPdfRecords">PDF</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Slip#</th><th>Date</th><th>Student</th><th>Programme</th><th>Purpose</th><th>Mode</th><th style="text-align:right">Amount</th></tr></thead><tbody id="recordsBody"></tbody></table></div>
+        <div class="empty" id="recordsEmpty" style="display:none;">No payments recorded for this period.</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Defaulters — outstanding dues (as of today)</h3>
+          <div class="row-actions">
+            <button class="btn btn-ghost btn-sm" id="btnPrintDefaulters">Print</button>
+            <button class="btn btn-ghost btn-sm" id="btnExcelDefaulters">Excel</button>
+            <button class="btn btn-ghost btn-sm" id="btnPdfDefaulters">PDF</button>
+            <button class="btn btn-gold btn-sm" id="btnBulkSlips">Print all defaulter slips</button>
+          </div>
+        </div>
+        <p class="panel-sub" id="lateFeeNote"></p>
+        <div class="table-wrap"><table><thead><tr><th>Name</th><th>Programme</th><th>Contact</th><th style="text-align:right">Due Amount</th><th>Actions</th></tr></thead><tbody id="defaultersBody"></tbody></table></div>
+        <div class="empty" id="defaultersEmpty" style="display:none;">No outstanding dues — everyone is paid up 🎉</div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="page" id="page-settings">
+      <div class="topbar"><div><h1>Settings</h1><p>Centre details, fee rules, security, backup and trash.</p></div></div>
+
+      <div class="panel">
+        <div class="settings-section">
+          <h3>Sync Status</h3>
+          <p class="panel-sub" id="syncStatusDetail">Checking storage mode…</p>
+          <button class="btn btn-ghost btn-sm" id="btnRefreshSync">↻ Refresh from shared storage</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>Demo Data</h3>
+          <p class="panel-sub">Adds 10 random sample students (with mixed payment history, discounts and dues) plus a few sample expenses, so you can try the app out before entering real records. Safe to run on top of real data — it only adds, never overwrites — and you can delete any sample student individually afterward.</p>
+          <button class="btn btn-gold btn-sm" id="btnSeedDemo">Fill 10 Random Students</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>Centre Details</h3>
+          <p class="panel-sub">Shown on printed fee slips and reports.</p>
+          <div class="field-row">
+            <div class="field"><label>Address</label><input type="text" id="setAddress" placeholder="e.g. Main Boulevard, Karachi"></div>
+            <div class="field"><label>Phone</label><input type="text" id="setPhone" placeholder="e.g. 021-xxxxxxx"></div>
+          </div>
+          <div class="field"><label>Receipt Footer Note</label><input type="text" id="setFooterNote" placeholder="Thank you. Please keep this receipt for your records."></div>
+          <button class="btn btn-primary btn-sm" id="btnSaveCentre">Save Centre Details</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>Fee Due Date &amp; Late Fee</h3>
+          <p class="panel-sub">Applied automatically to unpaid monthly fees past the due day.</p>
+          <div class="field-row">
+            <div class="field"><label>Fee Due Day of Month</label><input type="number" id="setDueDay" min="1" max="28"></div>
+            <div class="field"><label>Late Fee (Rs / day overdue)</label><input type="number" id="setLateFeePerDay" min="0"></div>
+          </div>
+          <div class="field"><label>Late Fee Cap (Rs, 0 = no cap)</label><input type="number" id="setLateFeeCap" min="0" style="max-width:200px;"></div>
+          <button class="btn btn-primary btn-sm" id="btnSaveLateFee">Save Fee Rules</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>PIN Lock</h3>
+          <p class="panel-sub" id="pinStatusText">Not enabled.</p>
+          <div class="checkbox-row"><input type="checkbox" id="setPinEnabled"><label for="setPinEnabled">Require a PIN to open this app</label></div>
+          <div class="field-row">
+            <div class="field"><label>New PIN (4–8 digits)</label><input type="password" id="setNewPin" inputmode="numeric" maxlength="8"></div>
+            <div class="field"><label>Confirm PIN</label><input type="password" id="setConfirmPin" inputmode="numeric" maxlength="8"></div>
+          </div>
+          <div class="helper">If you forget this PIN, the only way back in is clearing this browser's site data for this file — which erases all records unless you've taken a backup below. Leave both fields blank to keep the current PIN.</div>
+          <button class="btn btn-primary btn-sm" id="btnSavePin" style="margin-top:10px;">Save PIN Settings</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>Backup &amp; Restore</h3>
+          <p class="panel-sub">All data lives only in this browser. Export a backup regularly, especially before clearing browser data or switching devices.</p>
+          <div class="field" style="margin-bottom:8px;"><label>JSON — full, exact backup (recommended for restore)</label></div>
+          <div class="row-actions" style="margin-bottom:16px;">
+            <button class="btn btn-green btn-sm" id="btnExportData">⬇ Export Backup (.json)</button>
+            <button class="btn btn-ghost btn-sm" id="btnImportTrigger">⬆ Import Backup (.json)</button>
+            <input type="file" id="importFileInput" accept="application/json" style="display:none;">
+          </div>
+          <div class="field" style="margin-bottom:8px;"><label>Excel — editable roster, good for bulk add/update</label></div>
+          <div class="row-actions" style="margin-bottom:16px;">
+            <button class="btn btn-green btn-sm" id="btnExportExcel">⬇ Export Excel (.xlsx)</button>
+            <button class="btn btn-ghost btn-sm" id="btnImportExcelTrigger">⬆ Import Excel (.xlsx)</button>
+            <input type="file" id="importExcelInput" accept=".xlsx,.xls" style="display:none;">
+          </div>
+          <div class="field" style="margin-bottom:8px;"><label>PDF — for sharing or printing outside the app</label></div>
+          <div class="row-actions">
+            <button class="btn btn-green btn-sm" id="btnExportPDF">⬇ Export PDF Report</button>
+          </div>
+          <div class="helper" style="margin-top:10px;">Excel import matches rows to existing students by Student ID and updates them, or adds new students/payments/expenses when the ID is blank or not found. PDF is export-only — PDF files don't hold structured data, so they can't be imported back; use the JSON or Excel backup for that. Excel and PDF export need an internet connection the first time (to load the export library); JSON backup always works offline.</div>
+        </div>
+
+        <div class="settings-section">
+          <div class="panel-head"><h3>Trash</h3><button class="btn btn-danger btn-sm" id="btnEmptyTrash">Empty Trash</button></div>
+          <p class="panel-sub">Deleted students, payments and expenses stay here until you restore or empty the trash.</p>
+          <div class="table-wrap"><table><thead><tr><th>Type</th><th>Details</th><th>Deleted</th><th>Actions</th></tr></thead><tbody id="trashBody"></tbody></table></div>
+          <div class="empty" id="trashEmpty" style="display:none;">Trash is empty.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ MODALS ============ -->
+
+<div class="overlay" id="studentOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="studentModalTitle">Add Student</h3><button class="modal-close" data-close>&times;</button></div>
+    <input type="hidden" id="studentId">
+    <div class="field"><label>Student ID</label><input type="text" id="studentCode" readonly style="background:#F4F2EA; color:var(--muted);"></div>
+    <div class="field"><label>Full Name</label><input type="text" id="studentName" placeholder="e.g. Ayesha Fatima"></div>
+    <div class="field-row">
+      <div class="field"><label>Father's Name</label><input type="text" id="studentFather" placeholder="Optional"></div>
+      <div class="field"><label>Contact Number</label><input type="text" id="studentContact" placeholder="03xx-xxxxxxx"></div>
+    </div>
+    <div class="field">
+      <label>Photo (optional, for ID card)</label>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img id="studentPhotoPreview" src="" alt="" style="width:56px; height:56px; border-radius:8px; object-fit:cover; background:#EFEAdd; display:none; border:1px solid var(--line);">
+        <input type="file" id="studentPhotoInput" accept="image/*" style="flex:1;">
+      </div>
+      <input type="hidden" id="studentPhotoData">
+    </div>
+    <div class="field"><label>Programme</label><select id="studentProgram"></select></div>
+    <div class="field-row">
+      <div class="field"><label>Admission Date</label><input type="date" id="studentAdmDate"></div>
+      <div class="field"><label>Monthly Fee (Rs)</label><input type="number" id="studentFee" min="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Discount per month (Rs)</label><input type="number" id="studentDiscount" min="0" value="0"></div>
+      <div class="field"><label>Discount Reason</label><input type="text" id="studentDiscountReason" placeholder="e.g. Sibling / merit / financial"></div>
+    </div>
+    <div class="field"><label>Admission Fee (Rs, payable in installments)</label><input type="number" id="studentAdmissionFee" min="0"></div>
+    <div class="helper">Net monthly = monthly fee − discount. Admission fee can be collected across multiple partial payments — each recorded as "Admission Fee" under Collect Payment.</div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="btnSaveStudent">Save Student</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="paymentOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Collect Payment</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="field"><label>Student</label><select id="paySelectStudent"></select></div>
+    <div class="dues-banner" id="payDuesBanner" style="display:none;"></div>
+    <div class="field-row">
+      <div class="field"><label>Date</label><input type="date" id="payDate"></div>
+      <div class="field"><label>Amount (Rs)</label><input type="number" id="payAmount" min="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Purpose</label>
+        <select id="payPurpose"><option>Monthly Fee</option><option>Admission Fee</option><option>Exam Fee</option><option>Other</option></select>
+      </div>
+      <div class="field"><label>Mode</label>
+        <select id="payMode"><option>Cash</option><option>Bank Transfer</option><option>Easypaisa</option><option>JazzCash</option><option>Cheque</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Note (optional)</label><input type="text" id="payNote" placeholder="e.g. Covers Aug–Sep, or installment 1 of 2"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="btnSavePayment">Save &amp; Download Slip</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="studentViewOverlay">
+  <div class="modal wide">
+    <div class="modal-head"><h3>Student Record</h3><button class="modal-close" data-close>&times;</button></div>
+    <div id="studentViewBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Close</button>
+      <button class="btn btn-gold" id="btnWhatsAppFromView" style="display:none;">WhatsApp Reminder</button>
+      <button class="btn btn-ghost" id="btnPrintIdCardFromView">Print ID Card</button>
+      <button class="btn btn-primary" id="btnPrintStudentRecord">Print / Download Record</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="expenseOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3 id="expenseModalTitle">Add Expense</h3><button class="modal-close" data-close>&times;</button></div>
+    <input type="hidden" id="expenseId">
+    <div class="field-row">
+      <div class="field"><label>Date</label><input type="date" id="expenseDate"></div>
+      <div class="field"><label>Amount (Rs)</label><input type="number" id="expenseAmount" min="0"></div>
+    </div>
+    <div class="field"><label>Category</label>
+      <select id="expenseCategory"><option>Rent</option><option>Salaries</option><option>Utilities</option><option>Stationery</option><option>Marketing</option><option>Maintenance</option><option>Other</option></select>
+    </div>
+    <div class="field"><label>Note</label><input type="text" id="expenseNote" placeholder="Optional detail"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="btnSaveExpense">Save Expense</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="programmeOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Add Programme</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="field"><label>Programme Name</label><input type="text" id="newProgName" placeholder="e.g. 11th — Pre-Medical"></div>
+    <div class="field"><label>Category</label>
+      <select id="newProgCategory"><option value="School">School</option><option value="Intermediate">Intermediate</option><option value="Skills">Computer Courses / English</option></select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Monthly Fee (Rs)</label><input type="number" id="newProgFee" min="0" value="2500"></div>
+      <div class="field"><label>Admission Fee (Rs)</label><input type="number" id="newProgAdmFee" min="0" value="3000"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="btnSaveProgramme">Add Programme</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="promoteOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Promote Students</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="field"><label>From Programme</label><select id="promoteFrom"></select></div>
+    <div class="field"><label>To Programme</label><select id="promoteTo"></select></div>
+    <div class="helper" id="promoteCount" style="margin-bottom:10px;"></div>
+    <div class="checkbox-row"><input type="checkbox" id="promoteResetFee" checked><label for="promoteResetFee">Reset monthly fee to the new programme's default</label></div>
+    <div class="helper">Discount, contact and payment history carry over unchanged. This moves every student currently in "From Programme" — use Bulk Change Programme on the Students page instead if you only want to move some of them.</div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="btnConfirmPromote">Promote</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="bulkProgOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Change Programme — Selected Students</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="field"><label>New Programme</label><select id="bulkProgTarget"></select></div>
+    <div class="checkbox-row"><input type="checkbox" id="bulkProgResetFee" checked><label for="bulkProgResetFee">Reset monthly fee to the new programme's default</label></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="btnConfirmBulkProg">Apply</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="bulkDiscountOverlay">
+  <div class="modal">
+    <div class="modal-head"><h3>Set Discount — Selected Students</h3><button class="modal-close" data-close>&times;</button></div>
+    <div class="field-row">
+      <div class="field"><label>Discount per month (Rs)</label><input type="number" id="bulkDiscountAmount" min="0" value="0"></div>
+      <div class="field"><label>Reason</label><input type="text" id="bulkDiscountReason" placeholder="e.g. Merit scholarship"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="btnConfirmBulkDiscount">Apply</button>
+    </div>
+  </div>
+</div>
+
+<!-- Generic printable area — reused for fee slips, records, defaulters, ID cards & bulk due-slips -->
+<div id="printArea"></div>
+
+
+<!-- Bootstrap 5 JS bundle (Popper included) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- App logic -->
+<script src="js/app.js"></script>
+</body>
+</html>
